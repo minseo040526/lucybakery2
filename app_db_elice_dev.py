@@ -291,6 +291,15 @@ with st.sidebar:
 
 # ====== UI ======
 st.title("Lucy Bakery Menu Recommendation Service")
+# --- FLASH 영역 (주문/쿠폰 결과 고정 노출) ---
+if 'flash' in st.session_state and st.session_state['flash']:
+    f = st.session_state['flash']
+    st.success(f"주문 완료! 주문번호: **{f.get('order_code','-')}**")
+    if f.get('coupon_code'):
+        st.info(f"🎁 쿠폰 발급: **{f['coupon_code']}** (유효기간 ~ {f.get('coupon_exp','-')})")
+    elif f.get('coupon_exist'):
+        st.info(f"이미 보유한 론칭 쿠폰: **{f['coupon_exist']}** (상태 {f.get('coupon_status','-')}, ~ {f.get('coupon_exp','-')})")
+    st.divider()
 tabs = st.tabs(["베이커리 조합 추천", "음료 추천", "메뉴판 보기", "내 쿠폰함"])
 
 # Bakery tab
