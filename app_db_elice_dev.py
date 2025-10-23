@@ -219,7 +219,7 @@ st.title("Lucy Bakery Menu Recommendation Service")
 tabs = st.tabs(["베이커리 조합 추천", "음료 추천", "메뉴판 보기"])
 
 with tabs[0]:
-    st.subheader("예산 안에서 가능한 조합 3세트 (1~3개 자동)")
+    st.subheader("예산 안에서 가능한 상위 조합 3세트 추천")
     c1, c2 = st.columns([1,3])
     with c1:
         budget = st.number_input("총 예산(₩)", 0, 200000, 20000, step=1000)
@@ -272,7 +272,7 @@ with tabs[0]:
                                 st.caption("이미 론칭 기념 쿠폰이 발급된 고객이에요.")
 
 with tabs[1]:
-    st.subheader("음료 추천 (카테고리 + 당도)")
+    st.subheader("음료 추천")
     cat = st.selectbox("음료 카테고리", ["커피","라떼","에이드","스무디","티"])
     sweet_d = st.slider("음료 당도 (0~5)", 0, 5, 3, key="drink_sweet")
     if st.button("음료 추천받기 ☕️"):
