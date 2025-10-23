@@ -229,23 +229,57 @@ def show_combo(idx, items, total, budget):
                 st.text(', '.join(r['tags_list']) if r['tags_list'] else '-')
 
 # ====== CONSENT/LOGIN (PHONE-ONLY, AUTO) ======
+# ====== CONSENT/LOGIN (PHONE + BUTTON, SANITIZE) ======
 if 'authed_user_id' not in st.session_state:
     st.session_state.authed_user_id = None
 if 'authed_phone' not in st.session_state:
     st.session_state.authed_phone = ""
 
+import re
+
+def normalize_phone(raw: str) -> str:
+    # 숫자만 추출 (하이픈/공백/국번 문자 제거)
+    digits = re.sub(r'\D+', '', raw or '')
+    # 82로 시작하는 국제형식이면 0 붙여 변환 (예: 821012345678 -> 01012345678)
+    if digits.startswith('82') and len(digits) >= 11:
+        digits = '0' + digits[2:]
+    return digits
+
 with st.sidebar:
     st.markdown("### 고객 정보 (선택)")
-    st.caption("개인정보 동의 + 전화번호만으로 자동 로그인 (테스트용).")
+    st.caption("동의 + 전화번호 입력 후 ‘로그인’ 버튼을 눌러주세요.")
     consent = st.checkbox("개인정보(전화번호) 수집·이용에 동의합니다.")
-    phone = st.text_input("전화번호('-' 없이)", value=st.session_state.authed_phone, max_chars=11, placeholder="01012345678", disabled=not consent)
-    # 자동 로그인: 동의 + 10~11자리 숫자면 즉시 upsert
-    if consent and re.fullmatch(r'\\d{10,11}', phone or ""):
-        uid = upsert_user(phone)
-        st.session_state.authed_user_id = uid
-        st.session_state.authed_phone = phone
-        st.success("로그인 완료(전화번호 기반).")
+    raw_phone = st.text_input("전화번호(하이픈 무관)", value=st.session_state.authed_phone, placeholder="010-1234-5678", disabled=not consent)
+    phone = normalize_phone(raw_phone)
+    valid = consent and (len(phone) in (10, 11))
 
+    colA, colB = st.columns([1,1])
+    with colA:
+        if st.button("로그인", disabled=not valid):
+            uid = upsert_user(phone)
+            st.session_state.authed_user_id = uid
+            st.session_state.authed_phone = phone
+            st.success("로그인 완료! 맞춤 추천/주문/쿠폰이 활성화됩니다.")
+            st.rerun()  # 상태 반영 즉시 새로고침
+
+    with colB:
+        if st.session_state.authed_user_id and st.button("로그아웃"):
+            st.session_state.authed_user_id = None
+            st.session_state.authed_phone = ""
+            st.rerun()
+
+    # 가이드/오류 힌트
+    if consent and raw_phone and not valid:
+        st.warning("전화번호를 숫자 기준 10~11자리로 입력해주세요. (예: 01012345678)")
+
+    # 연결 상태 요약(로그인 후 표시)
+    if st.session_state.authed_user_id:
+        uid = st.session_state.authed_user_id
+        conn = db(); cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM orders WHERE user_id=?", (uid,)); o_cnt = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM coupons WHERE user_id=?", (uid,)); c_cnt = cur.fetchone()[0]
+        conn.close()
+        st.caption(f"내 주문 {o_cnt}건 · 내 쿠폰 {c_cnt}장 · 번호: {st.session_state.authed_phone}")
     # Health panel
     if st.session_state.authed_user_id:
         uid = st.session_state.authed_user_id
