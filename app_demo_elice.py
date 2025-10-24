@@ -65,11 +65,11 @@ def show_combo(idx, items, total, budget):
                 st.text(', '.join(r['tags_list']) if r['tags_list'] else '-')
 
 # ================= UI =================
-st.title("Lucy Bakery Menu Recommendation Service (Demo)")
+st.title("Lucy Bakery Menu Recommendation Service")
 
 # --- 주문 완료 화면 (간이 라우팅) ---
 if st.session_state.get("view") == "confirm":
-    st.success(f"주문 완료! (데모) 주문번호: **{st.session_state.get('order_code','-')}**")
+    st.success(f"주문 완료! 주문번호: **{st.session_state.get('order_code','-')}**")
     total = st.session_state.get("order_total", 0)
     names = st.session_state.get("order_names", [])
     if names:
