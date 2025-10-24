@@ -64,7 +64,24 @@ def show_combo(idx, items, total, budget):
                 st.text(', '.join(r['tags_list']) if r['tags_list'] else '-')
 
 st.title("Lucy Bakery Menu Recommendation Service (Demo)")
-
+# --- 주문 완료 화면 (간이 라우팅) ---
+if st.session_state.get("view") == "confirm":
+    st.success(f"주문 완료! (데모) 주문번호: **{st.session_state.get('order_code','-')}**")
+    total = st.session_state.get("order_total", 0)
+    names = st.session_state.get("order_names", [])
+    if names:
+        st.markdown("**주문 내역**")
+        for n in names:
+            st.markdown(f"- {n}")
+    st.markdown(f"**합계**: ₩{int(total):,}")
+    st.caption("※ 발표 버전: 개인정보/DB/쿠폰 기능은 다음 발표에서 제공 예정입니다.")
+    if st.button("처음으로 돌아가기"):
+        st.session_state["view"] = None
+        st.session_state["order_code"] = None
+        st.session_state["order_total"] = 0
+        st.session_state["order_names"] = []
+        st.rerun()
+    st.stop()  # 아래 탭 UI 렌더링 막고 여기서 종료
 tabs = st.tabs(["베이커리 조합 추천", "음료 추천", "메뉴판 보기"])
 
 with tabs[0]:
@@ -98,11 +115,16 @@ with tabs[0]:
             else:
                 for i, (items, total, score, r) in enumerate(results, start=1):
                     show_combo(i, items, total, budget)
-                    with st.form(key=f'order_form_{i}', clear_on_submit=False):
-                        submit = st.form_submit_button(f"세트 {i} 주문하기 (데모)")
-                        if submit:
-                            oc = gen_order_code()
-                            st.success(f"주문 완료! 주문번호: **{oc}**")
+                   with st.form(key=f'order_form_{i}', clear_on_submit=False):
+    submit = st.form_submit_button(f"세트 {i} 주문하기 (데모)")
+    if submit:
+        oc = gen_order_code()
+        # 주문 내역/합계 저장 -> 다음 화면에서 표시
+        st.session_state["order_code"] = oc
+        st.session_state["order_total"] = int(total)
+        st.session_state["order_names"] = items["name"].tolist()
+        st.session_state["view"] = "confirm"
+        st.rerun()  # 화면 전환
                             
 with tabs[1]:
     st.subheader("음료 추천 (카테고리 + 당도)")
