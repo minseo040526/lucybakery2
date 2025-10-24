@@ -1,8 +1,9 @@
 
 # -*- coding: utf-8 -*-
 import time, itertools, datetime as dt, pandas as pd, streamlit as st
+import os
 
-st.set_page_config(page_title='Lucy Bakery Menu Recommendation Service (Demo)', layout='wide')
+st.set_page_config(page_title='Lucy Bakery Menu Recommendation Service (Demo, Routed)', layout='wide')
 
 @st.cache_data
 def load_menu(path: str):
@@ -63,7 +64,9 @@ def show_combo(idx, items, total, budget):
                 st.caption(f"{r['category']} · ₩{int(r['price']):,}")
                 st.text(', '.join(r['tags_list']) if r['tags_list'] else '-')
 
+# ================= UI =================
 st.title("Lucy Bakery Menu Recommendation Service (Demo)")
+
 # --- 주문 완료 화면 (간이 라우팅) ---
 if st.session_state.get("view") == "confirm":
     st.success(f"주문 완료! (데모) 주문번호: **{st.session_state.get('order_code','-')}**")
@@ -81,11 +84,12 @@ if st.session_state.get("view") == "confirm":
         st.session_state["order_total"] = 0
         st.session_state["order_names"] = []
         st.rerun()
-    st.stop()  # 아래 탭 UI 렌더링 막고 여기서 종료
+    st.stop()
+
 tabs = st.tabs(["베이커리 조합 추천", "음료 추천", "메뉴판 보기"])
 
 with tabs[0]:
-    st.subheader("예산 안에서 가능한 상위 조합 3세트")
+    st.subheader("예산 안에서 가능한 조합 3세트 (1~3개 자동)")
     c1, c2 = st.columns([1,3])
     with c1:
         budget = st.number_input("총 예산(₩)", 0, 200000, 20000, step=1000)
@@ -115,17 +119,16 @@ with tabs[0]:
             else:
                 for i, (items, total, score, r) in enumerate(results, start=1):
                     show_combo(i, items, total, budget)
-                   with st.form(key=f'order_form_{i}', clear_on_submit=False):
-    submit = st.form_submit_button(f"세트 {i} 주문하기 (데모)")
-    if submit:
-        oc = gen_order_code()
-        # 주문 내역/합계 저장 -> 다음 화면에서 표시
-        st.session_state["order_code"] = oc
-        st.session_state["order_total"] = int(total)
-        st.session_state["order_names"] = items["name"].tolist()
-        st.session_state["view"] = "confirm"
-        st.rerun()  # 화면 전환
-                            
+                    with st.form(key=f'order_form_{i}', clear_on_submit=False):
+                        submit = st.form_submit_button(f"세트 {i} 주문하기 (데모)")
+                        if submit:
+                            oc = gen_order_code()
+                            st.session_state["order_code"] = oc
+                            st.session_state["order_total"] = int(total)
+                            st.session_state["order_names"] = items["name"].tolist()
+                            st.session_state["view"] = "confirm"
+                            st.rerun()
+
 with tabs[1]:
     st.subheader("음료 추천 (카테고리 + 당도)")
     cat = st.selectbox("음료 카테고리", ["커피","라떼","에이드","스무디","티"])
@@ -139,7 +142,6 @@ with tabs[1]:
 
 with tabs[2]:
     st.subheader("메뉴판 보기")
-    import os
     imgs = [p for p in ["menu_board_1.png","menu_board_2.png"] if os.path.exists(p)]
     if imgs:
         st.image(imgs, use_container_width=True, caption=[f"메뉴판 {i+1}" for i in range(len(imgs))])
@@ -147,4 +149,4 @@ with tabs[2]:
         st.info("menu_board_1.png, menu_board_2.png 파일을 앱과 같은 폴더에 넣으면 자동 표시됩니다.")
 
 st.divider()
-st.caption("© 2025 Lucy Bakery – Demo Version (No Font)")
+st.caption("© 2025 Lucy Bakery – Demo Version (No Font, Routed)")
